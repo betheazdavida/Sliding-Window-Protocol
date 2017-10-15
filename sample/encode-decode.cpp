@@ -89,6 +89,9 @@ int main(){
   vector<string> v = readFile(); // Read from file
   v.pop_back(); v.pop_back(); //delete 2 weird character
 
+  for(int i = 0; i < v.size(); i++){
+    cout << i << ":" << v[i] << endl;
+  }
   /*cout << "Result : \n";
   for (int i= 0; i < v.size(); i++)
     cout << "\t"<<v[i] << endl;*/
