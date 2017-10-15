@@ -1,21 +1,15 @@
-/*
-    Simple udp client
-*/
 #include <iostream>
-#include <string.h> //memset
-#include <stdlib.h> //exit(0);
+#include <string.h> 
+#include <stdlib.h> 
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
 using namespace std;
  
-//#define SERVER "127.0.0.1"
-//#define BUFLEN 256  //Max length of buffer
-//#define PORT 8000   //The port on which to send data
- 
 /* arguments: filename windowsize buffersize destinationIp destinationPort*/
 int main(int argc, char ** argv)
 {
+    /* Get Arguments */
     char *filename;
     int windowSize;
     int buffersize;
@@ -32,14 +26,17 @@ int main(int argc, char ** argv)
         destinationPort = atoi(argv[5]);
     }
 
+    /* Create Socket*/
     struct sockaddr_in si_other;
-    int s, i;
+    int sendSocket, i;
     socklen_t slen = sizeof(si_other);
+
+    /* Create message buffer */
     char *buf = new char[buffersize];
     char message[buffersize];
 
-    /* Create Socket */
-    s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    /* Initialize Socket */
+    sendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     memset((char *) &si_other, 0, sizeof(si_other));
     si_other.sin_family = AF_INET;
     si_other.sin_port = htons(destinationPort);
@@ -56,19 +53,19 @@ int main(int argc, char ** argv)
         cin >> message;
          
         //send the message
-        sendto(s, message, strlen(message) , 0 , (struct sockaddr *) &si_other, slen);
+        sendto(sendSocket, message, strlen(message) , 0 , (struct sockaddr *) &si_other, slen);
          
         //receive a reply and print it
-        //clear the buffer by filling null, it might have previously received data
+        //clear the buffer
         for(int i = 0; i < buffersize; i++){
             buf[i] = '\0';
         }
+
         //try to receive some data, this is a blocking call
-        recvfrom(s, buf, buffersize, 0, (struct sockaddr *) &si_other, &slen);
+        recvfrom(sendSocket, buf, buffersize, 0, (struct sockaddr *) &si_other, &slen);
          
         puts(buf);
     }
  
-    //TODO: klo kirim asci spasi blm bis
     return 0;
 }
