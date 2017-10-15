@@ -83,7 +83,7 @@ int main(int argc, char ** argv)
         cout << "Data: " << buf << endl;
 
         //save the message if save
-        if(strcmp(buf, "00000000\0") != 0){
+        if(strcmp(buf, "11111111\0") != 0){
             string message = buf;
             v.push_back(message);
         } else {

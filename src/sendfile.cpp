@@ -130,7 +130,7 @@ int main(int argc, char ** argv)
     }
 
     //send terminate connection
-    sendto(sendSocket, "00000000\0", 8, 0 , (struct sockaddr *) &si_other, slen);
+    sendto(sendSocket, "11111111\0", 8, 0 , (struct sockaddr *) &si_other, slen);
  
     return 0;
 }
