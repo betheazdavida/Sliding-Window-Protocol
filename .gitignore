@@ -3,3 +3,6 @@
 
 # executables
 *.exe
+
+# output test files
+out.txt

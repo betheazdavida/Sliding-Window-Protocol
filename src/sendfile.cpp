@@ -98,18 +98,11 @@ int main(int argc, char ** argv)
         exit(1);
     }
  
+    //Vector to be sent
     vector<string> v = readFile(filename);
+    v.pop_back(); v.pop_back();
     char msg[8];
     
-    // for(int j = 0; j < 8; j++){
-    //     msg[j] = v[0][j]; 
-    // } 
-    // msg[8] = '\0';
-
-    // for(int i = 0; i < v.size(); i++){
-    //     cout << i << ":" << v[i] << endl;
-    // }
-
     for(int i = 0; i < v.size(); i++){
         char msg[8];
         
@@ -135,6 +128,9 @@ int main(int argc, char ** argv)
          
         cout << "feedback" << buf << endl;
     }
+
+    //send terminate connection
+    sendto(sendSocket, "00000000\0", 8, 0 , (struct sockaddr *) &si_other, slen);
  
     return 0;
 }

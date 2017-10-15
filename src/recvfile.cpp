@@ -3,9 +3,32 @@
 #include <stdlib.h> 
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <vector>
+#include <string>
+#include <fstream>
+#include <cmath>
 
 using namespace std;
  
+char ByteToChar(string s){
+    int num=0,bit;
+    for (int i = 0; i < 8; i++){
+      bit = (s[i] == '0') ? 0 : 1;
+      num+= bit*pow(2,8-1-i);
+    }
+    return char(num);
+}
+
+void writeFile(vector<string> v, char* filename){
+    std::filebuf fb;
+    fb.open (filename,std::ios::out);
+    std::ostream os(&fb);
+    for (int i = 0; i < v.size(); i++){
+        os << ByteToChar(v[i]);
+    }
+    fb.close();
+}
+
 /* arguments: filename windowsize buffersize port */
 int main(int argc, char ** argv)
 {
@@ -44,9 +67,11 @@ int main(int argc, char ** argv)
     //bind socket to port
     bind(receiveSocket, (struct sockaddr*)&si_me, sizeof(si_me));
      
+    //Vector to save the message
+    vector<string> v;
+
     //keep listening for data
-    while(1)
-    {
+    while(1) {
         cout << "Waiting for data..." << endl;
         fflush(stdout);
          
@@ -56,11 +81,20 @@ int main(int argc, char ** argv)
         //print details of the client/peer and the data received
         cout << "Received packet from " << inet_ntoa(si_other.sin_addr) << ":" << ntohs(si_other.sin_port) << endl;
         cout << "Data: " << buf << endl;
-         
-        //now reply the client with the same data
-        sendto(receiveSocket, buf, recv_len, 0, (struct sockaddr*) &si_other, slen);
+
+        //save the message if save
+        if(strcmp(buf, "00000000\0") != 0){
+            string message = buf;
+            v.push_back(message);
+        } else {
+            break;
+        }
         
-    }
+        //now reply the client with the same data
+        sendto(receiveSocket, buf, recv_len, 0, (struct sockaddr*) &si_other, slen);  
+    } 
+
+    writeFile(v, filename);
  
     return 0;
 }
