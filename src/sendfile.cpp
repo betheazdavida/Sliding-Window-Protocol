@@ -13,7 +13,8 @@ using namespace std;
 #define BUFLEN 256  //Max length of buffer
 #define PORT 8000   //The port on which to send data
  
-int main(void)
+/* arguments: filename windowsize buffersize destination_ip destination_port*/
+int main(int argc, char ** argv)
 {
     struct sockaddr_in si_other;
     int s, i;
@@ -21,6 +22,22 @@ int main(void)
     //char buf[BUFLEN];
     char *buf = new char[BUFLEN];
     char message[BUFLEN];
+
+    char *filename;
+    int windowSize;
+    int buffersize;
+    char *destinationIp;
+    int destinationPort;
+    if(argc != 6){
+        cout << "./recvfile filename windowsize buffersize IP port" << endl;
+        exit(0);
+    } else {
+        filename = argv[1];
+        windowSize = atoi(argv[2]);
+        buffersize = atoi(argv[3]);
+        destinationIp = argv[4];
+        destinationPort = atoi(argv[5]);
+    }
  
     s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     memset((char *) &si_other, 0, sizeof(si_other));
