@@ -4,21 +4,21 @@
 
 class ACK {
   private:
-    unsigned int seqnum;
-    const unsigned char SOH;
-    unsigned char AWS;
-    unsigned char checksum;
+    int seqnum;
+    const char SOH;
+    char AWS;
+    char checksum;
 
   public:
     // CTOR
-    ACK(unsigned int seqnum,unsigned char AWS, unsigned char checksum);
+    ACK(int seqnum,char AWS, char checksum);
     // Getter
-    unsigned int getSeqnum();
-    const unsigned char getSOH();
-    unsigned char getAWS();
-    unsigned char getChecksum();
+    int getSeqnum();
+    const char getSOH();
+    char getAWS();
+    char getChecksum();
     // Utility
-    bool isCheckSumEqual(unsigned char checksum);
+    bool isCheckSumEqual(char checksum);
     void printACK();
 }__attribute__((packed));
 

@@ -4,25 +4,25 @@
 
 class PACKET{
 	private:
-		unsigned int seqnum;
-		const unsigned char SOH;
-		const unsigned char STX;
-		unsigned char data;
-		const unsigned char ETX;
-		unsigned char checksum;
+		int seqnum;
+		const  char SOH;
+		const  char STX;
+		char data;
+		const  char ETX;
+		char checksum;
 
 	public:
 		// CTOR
-		PACKET(unsigned int seqnum, unsigned char data,unsigned char checksum);
+		PACKET( int seqnum,  char data, char checksum);
 		// GETTER
-		unsigned int getSeqnum();
-		const unsigned char getSOH();
-		const unsigned char getSTX();
-		unsigned char getData();
-		const unsigned char getETX();
-		unsigned char getChecksum();
+		int getSeqnum();
+		const char getSOH();
+		const char getSTX();
+		char getData();
+		const char getETX();
+		char getChecksum();
 		// UTILITY
-		bool isCheckSumEqual(unsigned char checksum);
+		bool isCheckSumEqual( char checksum);
 		void printPACKET();
 }__attribute__((packed));
 

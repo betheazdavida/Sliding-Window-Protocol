@@ -3,38 +3,38 @@
 
 using namespace std;
 
-PACKET::PACKET(unsigned int seqnum, unsigned char data,
-               unsigned char checksum): SOH(1),STX(2),ETX(3){
+PACKET::PACKET( int seqnum,  char data,
+                char checksum): SOH(1),STX(2),ETX(3){
   this -> seqnum = seqnum;
   this -> data = data;
   this -> checksum = checksum;
 }
 
-unsigned int PACKET::getSeqnum(){
+ int PACKET::getSeqnum(){
     return seqnum;
 }
 
-const unsigned char PACKET::getSOH(){
+const  char PACKET::getSOH(){
   return SOH;
 }
 
-const unsigned char PACKET::getSTX(){
+const  char PACKET::getSTX(){
   return STX;
 }
 
-unsigned char PACKET::getData(){
+ char PACKET::getData(){
   return data;
 }
 
-const unsigned char PACKET::getETX(){
+const  char PACKET::getETX(){
   return ETX;
 }
 
-unsigned char PACKET::getChecksum(){
+ char PACKET::getChecksum(){
   return checksum;
 }
 
-bool PACKET::isCheckSumEqual(unsigned char checksum){
+bool PACKET::isCheckSumEqual( char checksum){
   return (this -> checksum == checksum);
 }
 

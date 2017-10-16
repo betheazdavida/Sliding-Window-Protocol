@@ -7,6 +7,9 @@
 #include <fstream>
 #include <string>
 
+#include "packet.h"
+#include "ack.h"
+
 using namespace std;
 
 vector<char> readToByte(char* filename){
@@ -67,7 +70,6 @@ int main(int argc, char ** argv)
 
     /* Create message buffer */
     char *buf = new char[buffersize];
-    char message[buffersize];
 
     /* Initialize Socket */
     sendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -85,13 +87,22 @@ int main(int argc, char ** argv)
     vector<char> v = readToByte(filename);
 
 
+
     for(int i = 0; i < v.size(); i++){
-        char msg[1];
-        msg[0] = v[i];
-        msg[1] = '\0';
+        //Framing packet
+        PACKET p(i,v[i],50);
+        int packet_len = sizeof(p);
+        char res[packet_len];
+
+        memcpy(res,&p,packet_len);
+
+        for (int j = 0; j < packet_len; j++)
+          buf[j]=res[j];
+        buf[packet_len]='\0';
+
         //send the message
-        sendto(sendSocket, msg, 1, 0 , (struct sockaddr *) &si_other, slen);
-        cout << " message : " << int(msg[0]) <<"\n";
+        sendto(sendSocket, buf, packet_len, 0 , (struct sockaddr *) &si_other, slen);
+        //cout << " BUF LEN : " <<strlen(buf) <<"\n";
         //receive a reply and print it
         //clear the buffer
         for(int k = 0; k < buffersize; k++){
@@ -108,7 +119,7 @@ int main(int argc, char ** argv)
     char msg[1];
     msg[0] = 4;
     msg[1] = '\0';
-    sendto(sendSocket, msg, 1, 0 , (struct sockaddr *) &si_other, slen);
+    sendto(sendSocket, msg, 0, 0 , (struct sockaddr *) &si_other, slen);
 
     return 0;
 }

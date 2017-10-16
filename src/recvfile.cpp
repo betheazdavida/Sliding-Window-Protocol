@@ -8,7 +8,11 @@
 #include <fstream>
 #include <cmath>
 
+#include "ack.h"
+#include "packet.h"
+
 using namespace std;
+
 
 void writeToFile(char* filename, vector<char> v){
 
@@ -82,18 +86,18 @@ int main(int argc, char ** argv)
 
         //try to receive some data, this is a blocking call
         recv_len = recvfrom(receiveSocket, buf, buffersize, 0, (struct sockaddr *) &si_other, &slen);
-
-        //print details of the client/peer and the data received
+        
+        PACKET* p = (PACKET *) buf;
+                //print details of the client/peer and the data received
         cout << "Received packet from " << inet_ntoa(si_other.sin_addr) << ":" << ntohs(si_other.sin_port) << endl;
-        cout << "Data: " << int(buf[0]) << endl;
 
         //save the message if save
 
 
-        if(recv_len == 1 && buf[0]== char(4)){
+        if(recv_len == 0 ){
             break;
         } else {
-          v.push_back(buf[0]);
+          v.push_back(p->getData());
         }
 
         //now reply the client with the same data

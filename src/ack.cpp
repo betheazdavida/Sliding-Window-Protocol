@@ -4,7 +4,7 @@
 using namespace std;
 
 
-ACK::ACK(unsigned int seqnum,unsigned char AWS, unsigned char checksum): SOH(6) {
+ACK::ACK(int seqnum,char AWS, char checksum): SOH(6) {
   this -> seqnum = seqnum;
   this -> AWS = AWS;
   this -> checksum = checksum;
@@ -17,22 +17,22 @@ void ACK::printACK(){
   cout << " Checksum : " << checksum << "\n";
 }
 
-unsigned int ACK::getSeqnum(){
+int ACK::getSeqnum(){
   return seqnum;
 }
 
-const unsigned char ACK::getSOH(){
+const char ACK::getSOH(){
   return SOH;
 }
 
-unsigned char ACK::getAWS(){
+char ACK::getAWS(){
   return AWS;
 }
 
-unsigned char ACK::getChecksum(){
+char ACK::getChecksum(){
   return checksum;
 }
 
-bool ACK::isCheckSumEqual(unsigned char checksum){
+bool ACK::isCheckSumEqual(char checksum){
   return (this -> checksum == checksum);
 }
