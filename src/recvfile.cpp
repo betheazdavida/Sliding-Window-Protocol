@@ -86,22 +86,60 @@ int main(int argc, char ** argv)
 
         //try to receive some data, this is a blocking call
         recv_len = recvfrom(receiveSocket, buf, buffersize, 0, (struct sockaddr *) &si_other, &slen);
-        
-        PACKET* p = (PACKET *) buf;
+
+        PACKET* pp = (PACKET *) buf;
                 //print details of the client/peer and the data received
         cout << "Received packet from " << inet_ntoa(si_other.sin_addr) << ":" << ntohs(si_other.sin_port) << endl;
-
+        //pp -> printPACKET();
+        PACKET p(pp->getSeqnum(),pp->getData(),pp->getChecksum());
+        for(int k = 0; k < buffersize; k++){
+            buf[k] = '\0';
+        }
         //save the message if save
 
 
         if(recv_len == 0 ){
             break;
         } else {
-          v.push_back(p->getData());
+          v.push_back(p.getData());
         }
 
-        //now reply the client with the same data
-        sendto(receiveSocket, buf, recv_len, 0, (struct sockaddr*) &si_other, slen);
+        //asumsi checksum bener
+        int n_pkg_rcv = recv_len/sizeof(PACKET);
+        //cout << "N PKG RCV: " << n_pkg_rcv <<"\n\n";
+
+        int lastPtr = 0;
+        for (int i=0; i< n_pkg_rcv; i++){
+          //Generate fungsi checksum dari suatu paket
+          char checksum_hsl = 50;
+
+          //cout << " SEQ NUM : " << p . getSeqnum() << "\n";
+          //cout << " P CHECKSUM : " << p . getChecksum() << "\n";
+
+
+          ACK a(p.getSeqnum(),n_pkg_rcv,p.getChecksum());
+          //a.printACK();
+          if (a.isCheckSumEqual(checksum_hsl)){
+            //cout << "checksum true " <<endl;
+            int ack_len = sizeof(a);
+            char res[ack_len];
+            memcpy(res, &a, ack_len);
+            for (int j = lastPtr; j < ack_len; j++){
+              buf[j]=res[j-lastPtr];
+            }
+            lastPtr+=ack_len;
+          } else {
+            break;
+          }
+        }
+
+        //cout << "LAST PTR : " << lastPtr <<"\n";
+
+
+        if (lastPtr>0){
+          //now reply the client with the same data
+          sendto(receiveSocket, buf, lastPtr, 0, (struct sockaddr*) &si_other, slen);
+        }
     }
 
     writeToFile(filename,v);

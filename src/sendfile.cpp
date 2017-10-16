@@ -111,6 +111,8 @@ int main(int argc, char ** argv)
 
         //try to receive some data, this is a blocking call
         recvfrom(sendSocket, buf, buffersize, 0, (struct sockaddr *) &si_other, &slen);
+        ACK* a = (ACK * )buf;
+        //a -> printACK();
 
         cout << "feedback" << buf << endl;
     }

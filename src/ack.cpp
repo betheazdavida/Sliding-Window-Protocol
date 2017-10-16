@@ -14,7 +14,7 @@ void ACK::printACK(){
   cout << " SOH : " << SOH << "\n";
   cout << " SEQNUM : " << seqnum << "\n";
   cout << " AWS : " << AWS << "\n";
-  cout << " Checksum : " << checksum << "\n";
+  cout << " Checksum : " << int(checksum) << "\n";
 }
 
 int ACK::getSeqnum(){
