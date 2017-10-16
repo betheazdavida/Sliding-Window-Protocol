@@ -1,6 +1,6 @@
 #include <iostream>
-#include <string.h> 
-#include <stdlib.h> 
+#include <string.h>
+#include <stdlib.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <vector>
@@ -9,25 +9,30 @@
 #include <cmath>
 
 using namespace std;
- 
-char ByteToChar(string s){
-    int num=0,bit;
-    for (int i = 0; i < 8; i++){
-      bit = (s[i] == '0') ? 0 : 1;
-      num+= bit*pow(2,8-1-i);
-    }
-    return char(num);
+
+void writeToFile(char* filename, vector<char> v){
+
+  // Prepare for write file
+  ofstream outfile (filename, ofstream::binary);
+
+  // Get size
+  long size = v.size();
+
+  // Allocate mem for buffer
+  char* buffer = new char[size];
+
+  // copy buffer from vector
+  for (int i=0; i < size; i++)
+    buffer[i]=v[i];
+
+  // Write the file
+  outfile.write (buffer,size);
+
+  // release dynamically-allocated memory & close file
+  delete[] buffer;
+  outfile.close();
 }
 
-void writeFile(vector<string> v, char* filename){
-    std::filebuf fb;
-    fb.open (filename,std::ios::out);
-    std::ostream os(&fb);
-    for (int i = 0; i < v.size(); i++){
-        os << ByteToChar(v[i]);
-    }
-    fb.close();
-}
 
 /* arguments: filename windowsize buffersize port */
 int main(int argc, char ** argv)
@@ -51,50 +56,51 @@ int main(int argc, char ** argv)
     struct sockaddr_in si_me, si_other;
     int receiveSocket, i, recv_len;
     socklen_t slen = sizeof(si_other);
-    
+
     //akan dipake buat framenya
     char *buf = new char[buffersize];
-     
+
     //create a UDP socket
     receiveSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-     
+
     // zero out the structure
     memset((char *) &si_me, 0, sizeof(si_me));
     si_me.sin_family = AF_INET;
     si_me.sin_port = htons(destinationPort);
     si_me.sin_addr.s_addr = htonl(INADDR_ANY);
-     
+
     //bind socket to port
     bind(receiveSocket, (struct sockaddr*)&si_me, sizeof(si_me));
-     
+
     //Vector to save the message
-    vector<string> v;
+    vector<char> v;
 
     //keep listening for data
     while(1) {
         cout << "Waiting for data..." << endl;
         fflush(stdout);
-         
+
         //try to receive some data, this is a blocking call
         recv_len = recvfrom(receiveSocket, buf, buffersize, 0, (struct sockaddr *) &si_other, &slen);
-         
+
         //print details of the client/peer and the data received
         cout << "Received packet from " << inet_ntoa(si_other.sin_addr) << ":" << ntohs(si_other.sin_port) << endl;
-        cout << "Data: " << buf << endl;
+        cout << "Data: " << int(buf[0]) << endl;
 
         //save the message if save
-        if(strcmp(buf, "11111111\0") != 0){
-            string message = buf;
-            v.push_back(message);
-        } else {
-            break;
-        }
-        
-        //now reply the client with the same data
-        sendto(receiveSocket, buf, recv_len, 0, (struct sockaddr*) &si_other, slen);  
-    } 
 
-    writeFile(v, filename);
- 
+
+        if(recv_len == 1 && buf[0]== char(4)){
+            break;
+        } else {
+          v.push_back(buf[0]);
+        }
+
+        //now reply the client with the same data
+        sendto(receiveSocket, buf, recv_len, 0, (struct sockaddr*) &si_other, slen);
+    }
+
+    writeToFile(filename,v);
+
     return 0;
 }

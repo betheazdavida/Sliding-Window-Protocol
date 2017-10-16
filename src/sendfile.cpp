@@ -1,6 +1,6 @@
 #include <iostream>
-#include <string.h> 
-#include <stdlib.h> 
+#include <string.h>
+#include <stdlib.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <vector>
@@ -8,54 +8,37 @@
 #include <string>
 
 using namespace std;
- 
 
-string convertToByte(char c){
-    int oct = int(c);
-    char s[8];
-    vector<int> v;
-    while(oct){
-      v.push_back(oct%2);
-      oct/=2;
-    }
-    string ret="";
-    int diff = 8-v.size();
-  
-    for (int i=0; i<diff; i++){
-      ret+="0";
-    }
-    for (int i = diff; i < 8; i++){
-      ret+= (v[v.size()-1-i+diff] == 1)? '1' : '0';
-    }
-  
-    return ret;
-}
-  
-vector<string> readFile(char* filename){
-    static vector<string> v;
+vector<char> readToByte(char* filename){
 
-    filebuf fb;
-    if (fb.open (filename,ios::in))
-    {
-        istream is(&fb);
-        while (is){
-        string ss = convertToByte(char(is.get()));
-        v.push_back(ss);
-        }
-        fb.close();
-    }
-    else {
-        cout << "Unable to open file";
-    }
+  // Read file
+  ifstream infile(filename,ifstream::binary);
 
-    for(int i = 0; i < v.size(); i++){
-        cout << i << ":" << v[i] << endl;
-    }
+  // Get size in byte
+  infile.seekg (0,infile.end);
+  long size = infile.tellg();
+  infile.seekg (0);
 
-    return v;
+  // allocate memory for file content
+  char* buffer = new char[size];
+
+  // read file and copy to buffer
+  infile.read (buffer,size);
+
+  // Prepare for return vector
+  static vector<char> v_buf;
+  for (int i = 0; i < size; i++)
+    v_buf.push_back(buffer[i]);
+
+  // release dynamically-allocated memory & close file
+  delete[] buffer;
+  infile.close();
+
+  return v_buf;
 
 }
-  
+
+
 
 /* arguments: filename windowsize buffersize destinationIp destinationPort*/
 int main(int argc, char ** argv)
@@ -91,32 +74,24 @@ int main(int argc, char ** argv)
     memset((char *) &si_other, 0, sizeof(si_other));
     si_other.sin_family = AF_INET;
     si_other.sin_port = htons(destinationPort);
-     
-    if (inet_aton(destinationIp , &si_other.sin_addr) == 0) 
+
+    if (inet_aton(destinationIp , &si_other.sin_addr) == 0)
     {
         fprintf(stderr, "inet_aton() failed\n");
         exit(1);
     }
- 
-    //Vector to be sent
-    vector<string> v = readFile(filename);
-    v.pop_back(); v.pop_back();
-    char msg[8];
-    
-    for(int i = 0; i < v.size(); i++){
-        char msg[8];
-        
-        //cout << "counter " << i << endl;
-        for(int j = 0; j < 8; j++){
-            msg[j] = v[i][j]; 
-        } 
-        msg[8] = '\0';
-        //cout << "isi vector " << v[i] << endl; 
-        //cout << "isi msg " << msg << endl; 
 
+    //Vector to be sent
+    vector<char> v = readToByte(filename);
+
+
+    for(int i = 0; i < v.size(); i++){
+        char msg[1];
+        msg[0] = v[i];
+        msg[1] = '\0';
         //send the message
-        sendto(sendSocket, msg, strlen(msg), 0 , (struct sockaddr *) &si_other, slen);
-         
+        sendto(sendSocket, msg, 1, 0 , (struct sockaddr *) &si_other, slen);
+        cout << " message : " << int(msg[0]) <<"\n";
         //receive a reply and print it
         //clear the buffer
         for(int k = 0; k < buffersize; k++){
@@ -125,12 +100,15 @@ int main(int argc, char ** argv)
 
         //try to receive some data, this is a blocking call
         recvfrom(sendSocket, buf, buffersize, 0, (struct sockaddr *) &si_other, &slen);
-         
+
         cout << "feedback" << buf << endl;
     }
 
     //send terminate connection
-    sendto(sendSocket, "11111111\0", 8, 0 , (struct sockaddr *) &si_other, slen);
- 
+    char msg[1];
+    msg[0] = 4;
+    msg[1] = '\0';
+    sendto(sendSocket, msg, 1, 0 , (struct sockaddr *) &si_other, slen);
+
     return 0;
 }
