@@ -2,11 +2,24 @@
 #define ACK_H
 #pragma
 
-typedef struct{
-	const unsigned char SOH = 6;
-	unsigned int seqnum;
-	unsigned char AWS;
-	unsigned char checksum;
-}__attribute__((packed)) ACK;
+class ACK {
+  private:
+    unsigned int seqnum;
+    const unsigned char SOH;
+    unsigned char AWS;
+    unsigned char checksum;
+
+  public:
+    // CTOR
+    ACK(unsigned int seqnum,unsigned char AWS, unsigned char checksum);
+    // Getter
+    unsigned int getSeqnum();
+    const unsigned char getSOH();
+    unsigned char getAWS();
+    unsigned char getChecksum();
+    // Utility
+    bool isCheckSumEqual(unsigned char checksum);
+    void printACK();
+}__attribute__((packed));
 
 #endif
