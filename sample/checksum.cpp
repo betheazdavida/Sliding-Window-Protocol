@@ -2,7 +2,7 @@
  
 using namespace std;
  
-void getChecksum (char a[8], char b[8], char* checksum){
+void getChecksumValue (char a[8], char b[8], char* checksum){
     char sum[10],complement[10];
     int i;
 
@@ -90,10 +90,13 @@ void getChecksum (char a[8], char b[8], char* checksum){
     }
 }
 
-bool checkChecksum (char a[8], char b[8], char c[10]){
+bool checkChecksum (PACKET pck){
     char sum[10],complement[10];
     int i;
     bool same = true;
+    a = pck.getSOH();
+    b = pck.getData();
+    c = pck.getChecksum();
 
     if(strlen(a)==strlen(b))
     {
@@ -188,9 +191,6 @@ int main(){
     char header[8],data[8],checksum[10],cek[10];
     cin>>header;
     cin>>data;
-    getChecksum(header,data,checksum);
-    cout<<checksum<<endl;
-    cin>>cek;
-    cout<<checkChecksum(header,data,cek)<<endl;
+    getChecksumValue(header,data,checksum);
     return 0;
 }
