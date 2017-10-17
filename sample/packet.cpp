@@ -31,8 +31,10 @@ const  char PACKET::getETX(){
   return ETX;
 }
 
- char PACKET::getChecksum(){
-  return seqnum + (int)this->SOH + (int)this->STX + (int)this->ETX + (int)this->data;
+char PACKET::getChecksum(){
+  int sum = seqnum + (int)this->SOH + (int)this->STX + (int)this->ETX + (int)this->data;
+  checksum = sum;  
+  return checksum;
 }
 
 bool PACKET::isCheckSumEqual(){
