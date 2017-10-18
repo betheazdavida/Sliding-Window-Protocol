@@ -24,12 +24,35 @@ Pada :
 3.	<buffersize> diisi dengan besar buffer yang ingin dikirim
 4.	<port> diisi dengan port yang ingin digunakan untuk menerima file.
 
-# Cara Kerja Sliding Windows
+# Cara Kerja Sliding Window Protocol
+
+Sliding window protocol adalah salah satu protocol untuk melakukan transmisi data berbasis packet. Secara konsep, setiap transmisi yang dilakukan dilengkapi dengan consecutive sequence number yang unik, dan penerima menggunakan sequence number tersebut untuk mengurutkan packet yang diterima, dimana selain itu juga menolak packet yang duplikat serta mengidentifikasi packet yang hilang. 
+
+Sliding window protocol membuat kita dapat melakukan transfer packet dengan sequence number yang besarnya sudah ditentukan dengan tidak terbatas. Setiap window merupakan representasi dari pengirim untuk menunjukan total jumlah packet yang belum di acknowledge oleh penerima. Header dari packet menggunakan 16 bits untuk memuat besar window yang akan diterima kepada pengirim.
+
+Pada awalnya, pengirim mulai untuk mengirim sedikit packet dan meningkatkan jumlah packet di setiap transmisi setelah menerima acknowledgement packet dari penerima. Setiap acknowledgement yang diterima, window bergeser satu packet untuk mentransmisi satu packet. 
+Setiap satu ack diterima, window akan bergerak satu packet. Pada sisi penerima, window juga bergerak satu packet untuk setiap packet yang diterima. 
+
+Paket yang dapat ditransmit pada Sliding Windows Protocol ini adalah 
+
+```
+na ≤ nr ≤ ns ≤ nt ≤ na + wt
+```
+
+dimana :
+nt = sequence number pengirim saat ini
+nr = sequence number penerima saat ini
+wt = window size pengirim
+nr = packet pertama yang belum diterima
+ns = sequence number yang paling besar dari sequence number yang sudah diterima
+na = acknowledgement terbesat yang diterima oleh pengirim
 
 # Pembagian Tugas
 
 13515081 Aldrich Valentino Halim :
+
 13515084 Bethea Zia Davida :
+
 13515120 Azis Adi Kuncoro :
 
 # Jawaban Pertanyaan 
@@ -37,7 +60,9 @@ Pada :
 1.	Apa yang terjadi jika advertised window yang dikirim bernilai 0? Apa cara untuk menangani hal tersebut?
 
 Ketika advertised window yang dikirim bernilai 0, client tidak dapat menerima data lagi dan transmisi dihentikan sampai bisa memproses informasi dalam buffer yang diterima.
-Cara untuk menangani hal tersebut adalah dengan melakukan pencarian penyebab mengapa terjadi hal tersebut, kemungkinan-kemungkinannya adalah mesin yang digunakan menjalankan banyak proses pada saat tersebut, sehingga prosesornya bekerja maksimal ataupun ada pembatasan dalam penggunaan RAM untuk transmisi tersebut. Selain itu bisa juga terjadi error pada penerima TCP seperti salah mengkonfigurasi Windows registry. Setelah diketahui penyebabnya, maka ditangani sesuai penyebabnya, contoh untuk salah mengkonfigurasi Windows registry, kita dapat melakukan pengubahan pada Windows registry nya.
+Cara untuk menangani hal tersebut adalah :
+1. Mengubah mode pengirim yang aktif untuk mengirim packet menjadi sleep untuk beberapa saat, lalu mencoba untuk mengirim packet lagi
+2. Apabila penerima mendapat info advertised window yang bernilai 0, maka penerima akan melakukan pending pengiriman acknowledgment hingga advertised window bernilai lebih besar dari 0, setelah itu penerima baru mengirim ack berikutnya.
 
 2.	Sebutkan field data yang terdapat TCP Header serta ukurannya, ilustrasikan, dan jelaskan kegunaan dari masing-masing field data tersebut!
 
@@ -66,6 +91,7 @@ Kegunaan dari Checksum adalah untuk mendeteksi adanya data yang error atau corru
 Urgent Pointer bisa digunakan sebagai Data Offset untuk menandai subset dari sebuah data sebagai suatu prioritas untuk diproses.
 12.	Optional Data (0 to 40 bytes)
 Kegunaan dari Optional Data adalah mendukung untuk acknowledgement khusus dan algoritma window scaling.
+
  -----------------------------------------------------------------------------------------
 |	            	Source Port		                 |	          Destination Port	                |
 |-----------------------------------------------------------------------------------------|
