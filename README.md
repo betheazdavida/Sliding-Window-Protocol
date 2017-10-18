@@ -40,11 +40,17 @@ na ≤ nr ≤ ns ≤ nt ≤ na + wt
 ```
 
 dimana :
+
 nt = sequence number pengirim saat ini
+
 nr = sequence number penerima saat ini
+
 wt = window size pengirim
+
 nr = packet pertama yang belum diterima
+
 ns = sequence number yang paling besar dari sequence number yang sudah diterima
+
 na = acknowledgement terbesat yang diterima oleh pengirim
 
 # Pembagian Tugas
