@@ -66,19 +66,19 @@ Kegunaan dari Checksum adalah untuk mendeteksi adanya data yang error atau corru
 Urgent Pointer bisa digunakan sebagai Data Offset untuk menandai subset dari sebuah data sebagai suatu prioritas untuk diproses.
 12.	Optional Data (0 to 40 bytes)
 Kegunaan dari Optional Data adalah mendukung untuk acknowledgement khusus dan algoritma window scaling.
- ------------------------------------------------------------------------------------------
-|	            	Source Port		                 |	          Destination Port	            |
+ -----------------------------------------------------------------------------------------
+|	            	Source Port		                 |	          Destination Port	                |
 |-----------------------------------------------------------------------------------------|
-|		                              		Sequence Number		                                 	|
+|		                              		Sequence Number		                                     	|
 |-----------------------------------------------------------------------------------------|
-|		                             	Acknoledgement Number        		        	              |
+|		                             	Acknoledgement Number        		        	                 |
 |-----------------------------------------------------------------------------------------|
-| Data Offset  | Reserved | ECN | Control Bits | 		        Window                      	|
+| Data Offset  | Reserved | ECN | Control Bits | 		        Window                        	|
 |-----------------------------------------------------------------------------------------|
-|		                  Checksum	    	         |	         Urgent Pointer                	|
+|		                  Checksum	    	         |	         Urgent Pointer                    	|
 |-----------------------------------------------------------------------------------------|	
-| 		                         Optional Data dan Padding	                            		|
+| 		                         Optional Data dan Padding	                            	     	|
 |-----------------------------------------------------------------------------------------|
-| 			                                    	Data				     	                          |
+| 			                                    	Data				     	                                  |
  -----------------------------------------------------------------------------------------
 
