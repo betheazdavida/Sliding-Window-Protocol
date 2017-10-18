@@ -1,7 +1,11 @@
-#Petunjuk Penggunaan Program
+# Petunjuk Penggunaan Program
 
 Penggunaan program dimulai dengan menjalankan comand :
+
+```
 ./sendfile <filename> <windowsize> <buffersize> <destination_ip> <destination_port>
+```
+
 pada terminal yang ingin digunakan sebagai pengirim. Pada :
 1.	<filename> diisi dengan nama file yang akan dikirim
 2.	<windowsize> diisi dengan windowsize yang diinginkan
@@ -9,22 +13,26 @@ pada terminal yang ingin digunakan sebagai pengirim. Pada :
 4.	<destination_ip> diisi dengan ip dari penerima file
 5.	<destination_port> diisi dengan port yang digunakan oleh penerima untuk membangun koneksi dengan pengirim.
 Setelah itu, membuka terminal lain yang ingin digunakan sebagai penerima dan menjalankan command :
+
+```
 ./recvfile <filename> <windowsize> <buffersize> <port>
+```
+
 Pada :
 1.	<filename> diisi dengan nama file yang ingin digunakan untuk menerima file dari pengirim
 2.	<windowsize> diisi dengan windowsize yang diinginkan
 3.	<buffersize> diisi dengan besar buffer yang ingin dikirim
 4.	<port> diisi dengan port yang ingin digunakan untuk menerima file.
 
-#Cara Kerja Sliding Windows
+# Cara Kerja Sliding Windows
 
-#Pembagian Tugas
+# Pembagian Tugas
 
 13515081 Aldrich Valentino Halim :
 13515084 Bethea Zia Davida :
 13515120 Azis Adi Kuncoro :
 
-#Jawaban Pertanyaan 
+# Jawaban Pertanyaan 
 
 1.	Apa yang terjadi jika advertised window yang dikirim bernilai 0? Apa cara untuk menangani hal tersebut?
 
