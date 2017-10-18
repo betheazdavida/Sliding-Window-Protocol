@@ -11,7 +11,7 @@ class ACK {
 
   public:
     // CTOR
-    ACK(int seqnum,char AWS, char checksum);
+    ACK(int seqnum,char AWS);
     // Getter
     int getSeqnum();
     const char getSOH();

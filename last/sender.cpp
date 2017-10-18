@@ -1,14 +1,3 @@
-/*
-        demo-udp-03: udp-send: a simple udp client
-	send udp messages
-	sends a sequence of messages (the # of messages is defined in MSGS)
-	The messages are sent to a port defined in destinationPort
-
-        usage:  udp-send
-
-        Paul Krzyzanowski
-*/
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -28,6 +17,76 @@
 using namespace std;
 #define MSGS 5	/* number of messages to send */
 
+
+struct sockaddr_in myaddr, remaddr;
+socklen_t addrlen = sizeof(remaddr);
+int fd,slen=sizeof(remaddr);
+char* buffer;
+int na,nt,wt;
+vector<bool> packetreceived;
+char *filename;
+int windowSize;
+int buffersize;
+char *destinationIp;
+int destinationPort;
+vector<char> v;
+
+void sendPACKET(PACKET p){ //Packet yg akan dikirim always valid
+  cout << "[SEND] PACKET SEQNUM : " << p.getSeqnum() <<"\n";
+  int bufsize = sizeof(PACKET);
+  char buf[buffersize];
+  memcpy(buf,&p,bufsize);
+  sendto(fd, buf, bufsize, 0 , (struct sockaddr *)&remaddr, slen);
+}
+
+ACK receiveACK(){
+  int bufsize = sizeof(ACK);
+  char buf[buffersize];
+  static ACK nack(-1,'\0');
+  int recvlen = recvfrom(fd, buf, bufsize, 0, (struct sockaddr *)&remaddr, &addrlen);
+  ACK *a = (ACK *)buf;
+  if (recvlen == sizeof(ACK) && a->isCheckSumEqual()) { //Validation
+    cout <<"[RECEIVE]" << "ACK for - " <<a->getSeqnum()-1<<"\n";
+    ACK aret(a->getSeqnum(),a->getAWS());
+    return aret;
+  }
+  return nack;
+}
+
+void sendMsg(){
+  for (int i =0; i < wt; ++i){
+    cout <<(nt+i <= na+wt)<<" - "<<((nt+i)<=v.size()) <<" - "<<!packetreceived[nt+i]<<"\n";
+    if (nt+i <= na+wt && (nt+i)< v.size() && !packetreceived[nt+i]){
+      //cout <<"packet-"<<nt+i<<" sent "<<buffer[(nt+i)%buffersize]<<"\n";
+      PACKET p(nt+i,buffer[(nt+i)%buffersize]);
+      sendPACKET(p);
+    }
+  }
+}
+
+void recvMsg(){
+  //for (int i = 0; i < wt; i++){
+      ACK a = receiveACK();
+      if (a.getSeqnum() != -1){ //validation
+        packetreceived[a.getSeqnum()-1]=true;
+        na = max(na,a.getSeqnum()); //update the Largest ACK received
+      }
+
+    //cout <<"pakcket-"<<a.getSeqnum()-1<<" : "<<packetreceived[a.getSeqnum()-1]<<"\n";
+  //}
+}
+
+void emptyBuffer(){
+  for (int i = 0; i<buffersize; ++i){
+      packetreceived[i]=false;
+      buffer[i]='\0';
+  }
+}
+
+void fillBuffer(const vector<char>& v){
+  for (int i =0; i<buffersize && i+nt < v.size(); ++i)
+    buffer[i]=v[i+nt];
+}
 
 
 
@@ -63,13 +122,7 @@ vector<char> readToByte(char* filename){
 int main(int argc, char** argv)
 {
 
-  char *filename;
-  int windowSize;
-  int buffersize;
-  char *destinationIp;
-  int destinationPort;
-  vector<char> v;
-  int currentSeqnum=0;
+
 
   /* Get Arguments */
   if(argc != 6){
@@ -82,15 +135,10 @@ int main(int argc, char** argv)
       destinationIp = argv[4];
       destinationPort = atoi(argv[5]);
   }
+  buffer = new char[buffersize];
+  for (int i=0; i<buffersize;i++)
+    packetreceived.push_back(false);
 
-  char buffer[buffersize];
-
-
-	struct sockaddr_in myaddr, remaddr;
-  socklen_t addrlen = sizeof(remaddr);
-	int fd, i, slen=sizeof(remaddr);
-	//char *destinationIp = "127.0.0.1";	/* change this to use a different destinationIp */
-	char buf[buffersize];
 
 	/* create a socket */
 
@@ -122,74 +170,33 @@ int main(int argc, char** argv)
 	}
 
 	/* now let's send the messages */
+
   v = readToByte(filename);
+  nt = 0; na = 0; wt = windowSize;
+  fillBuffer(v);
+  while (nt < v.size()){
+    cout << " NT : " << nt <<" FILESIZE : "<<v.size()<<"\n";
+    sendMsg();
+    recvMsg();
+    while(packetreceived[nt]&&nt < v.size()){
+      nt++;
+      if ( (buffersize - (nt%buffersize)) < windowSize)
+        wt = buffersize - (nt%buffersize);
+      else wt = windowSize;
 
-  while (1){
-    //send data of sliding window size
-    int remainder = (v.size()-1 - currentSeqnum) < windowSize ? v.size() - currentSeqnum : windowSize;
-    for (int i = 0; i < remainder; i++){
-        //Framing packet
-        PACKET p(i+currentSeqnum,v[i + currentSeqnum]);
-        p . printPACKET();
-        int packet_len = sizeof(p);
-        char res[packet_len];
-
-        memcpy(res,&p,packet_len);
-
-        for (int j = 0; j < packet_len; j++) buf[j]=res[j];
-
-        cout <<"BUG" <<endl;
-
-        //insert the data to buffer
-        buffer[(currentSeqnum)%256+i] = p.getData();
-        cout << "iterator di buffer : " << currentSeqnum+i << endl;
-        cout << "isi buffer sesudah: "<< buffer << endl;
-        //send the message
-        cout << "Packet len : "<<packet_len << endl;
-        for (int j = 0; j < packet_len; j++)
-          cout << buf[j] << " - ";
-        cout<<"\n";
-        sendto(fd, buf, packet_len, 0 , (struct sockaddr *)&remaddr, slen);
-        cout <<"BUG2" <<endl;
-
-    }
-
-    for(int i = 0; i < remainder; i++){
-        //try to receive some data, this is a blocking call
-        int recvlen = recvfrom(fd, buf, buffersize, 0, (struct sockaddr *)&remaddr, &addrlen);
-        ACK* a = (ACK * )buf;
-        //a -> printACK();
-        //now slide the window
-        if(a->getSeqnum() < v.size()-1){
-            currentSeqnum = a->getSeqnum();
-        } else {
-            //over
-            currentSeqnum += 2;
-            break;
-        }
-    }
-    if(currentSeqnum >= v.size()-1) break;
-    cout << "sekarang ada di sini : " << currentSeqnum << endl;
-    if(currentSeqnum == sizeof(buffer)){
-        for(int i = 0; i < sizeof(buffer); i++){
-            buffer[i] = '\0';
-        }
-        cout << "ngosongin" << endl;
+      if (nt == buffersize){
+        emptyBuffer();
+        fillBuffer(v);
+      }
     }
   }
 
   //send terminate packet
      //Framing packet
      PACKET p(-1,'\0'); //headernya nol
-     int packet_len = sizeof(p);
-     char res[packet_len];
-
-     memcpy(res,&p,packet_len);
-
-     for (int j = 0; j < packet_len; j++) buf[j]=res[j];
-     buf[packet_len]='\0';
-     sendto(fd, buf, packet_len, 0 , (struct sockaddr *)&remaddr, slen);
-
+     sendPACKET(p);
+  delete[] buffer;
 	close(fd);
+  cout<<" FILE SIZE : "<<v.size()<<"\n";
 	return 0;
 }

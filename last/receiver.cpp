@@ -20,10 +20,51 @@
 #include "packet.h"
 #include "ack.h"
 
-#define BUFSIZE 2048
+
 
 using namespace std;
 
+
+	struct sockaddr_in myaddr;	/* our address */
+	struct sockaddr_in remaddr;	/* remote address */
+	socklen_t addrlen = sizeof(remaddr);		/* length of addresses */
+  int slen=sizeof(remaddr);
+	int recvlen;			/* # bytes received */
+	int fd;				/* our socket */
+  /* Get Arguments */
+  char *filename;
+  int windowSize;
+  int buffersize;
+  int destinationPort;
+
+  vector<char> v;
+	vector<bool> packetreceived;
+  char* buffer;
+	int nr,ns,wr;
+
+  void sendACK(ACK p){ //Packet yg akan dikirim always valid
+		cout << "[SEND] ACK for - " << p.getSeqnum()-1 <<". AWS : "<<int(p.getAWS())<<"\n";
+    int bufsize = sizeof(ACK);
+    char buf[buffersize];
+    memcpy(buf,&p,bufsize);
+    sendto(fd, buf, bufsize, 0 , (struct sockaddr *)&remaddr, slen);
+  }
+
+PACKET receivePACKET(){
+  int bufsize = sizeof(PACKET);
+  char buf[buffersize];
+  PACKET npack(-1,'\0');
+  int recvlen = recvfrom(fd, buf, bufsize, 0, (struct sockaddr *)&remaddr, &addrlen);
+  PACKET *a = (PACKET *)buf;
+  //cout << "SEQNUM : "<<a->getSeqnum()<<" ,recv len : " << recvlen <<" ,Is equal checksum :" << a->isCheckSumEqual()<<"\n";
+
+	if (recvlen == sizeof(PACKET) && a->isCheckSumEqual()) { //Validation
+		cout << "[RECEIVE] PACKET SEQNUM : " << a->getSeqnum() <<". Data : "<<a->getData()<<"\n";
+    PACKET aret(a->getSeqnum(),a->getData());
+    return aret;
+  }
+  return npack;
+}
 
 void writeToFile(char* filename, vector<char> v){
 
@@ -49,13 +90,32 @@ void writeToFile(char* filename, vector<char> v){
 }
 
 
+bool isBufferFull(){
+	return (nr != 0 && (nr % buffersize) == 0);
+}
+
+void addtoVector(int N){
+	for (int i=0; i<N; i++){
+			v.push_back(buffer[i]);
+			packetreceived[i]=false;
+	}
+}
+void clearBuffer(){
+	for (int i=0; i<buffersize; i++)
+		buffer[i]='\0';
+}
+bool isFallInWindow(int x){
+	return (nr <= x && x <= (nr+wr));
+}
+bool isPreStored(int x){
+	for (int i=x-1; i>=nr; i--)
+		if (!packetreceived[i]) return false;
+	return true;
+}
+
 int main(int argc, char **argv)
 {
-  /* Get Arguments */
-  char *filename;
-  int windowSize;
-  int buffersize;
-  int destinationPort;
+
   if(argc != 5){
       cout << "./recvfile filename windowsize buffersize port" << endl;
       exit(0);
@@ -67,13 +127,6 @@ int main(int argc, char **argv)
       destinationPort = atoi(argv[4]);
   }
 
-	struct sockaddr_in myaddr;	/* our address */
-	struct sockaddr_in remaddr;	/* remote address */
-	socklen_t addrlen = sizeof(remaddr);		/* length of addresses */
-  int slen=sizeof(remaddr);
-	int recvlen;			/* # bytes received */
-	int fd;				/* our socket */
-	unsigned char buf[BUFSIZE];	/* receive buffer */
 
 
 	/* create a UDP socket */
@@ -95,56 +148,62 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+  buffer = new char[buffersize];
+
+	for (int i=0;i<buffersize;i++)
+		packetreceived.push_back(false);
+
   //Vector to save the message
-  vector<char> v;
-  char buffer[buffersize];
   int currentSeqnum = 0;
   int count;
   bool eof = false;
-  while(!eof){
+	nr = 0; ns = 0; wr = windowSize;
+  while(1){
       //try to receive some data, this is a blocking call
       cout << "waiting for segment" << endl;
       fflush(stdout);
-      int recv_len = recvfrom(fd, buf, sizeof(buf), 0, (struct sockaddr *)&remaddr, &addrlen);
-      printf("LEN : %d\n",recv_len);
-      for (int j = 0; j < sizeof(PACKET); j++)
-        cout << buf[j] << " - ";
-      cout << "\n";
 
-      if(recv_len != 0){ //dapet segment
-        PACKET* pp = (PACKET *) buf;
-        //endoffile
-        if(pp->getSeqnum() == -1){
-          eof=true;
-        }
-        //print details of the client/peer and the data received
-        cout << "Received packet from " << inet_ntoa(remaddr.sin_addr) << ":" << ntohs(myaddr.sin_port) << endl;
-        pp -> printPACKET();
-        if (pp -> isCheckSumEqual()){
-          buffer[currentSeqnum] = pp -> getData(); //copy data
-          currentSeqnum++;
-          if (currentSeqnum == sizeof(buffer)){ // jika penuh maka kosongkan
-            for(int i = 0; i < sizeof(buffer); i++){
-              v.push_back(buffer[i]);
-              buffer[i] = '\0';
-            }
-            currentSeqnum=0;
-          }
-          int aws = (sizeof(buffer)-currentSeqnum) > windowSize ? windowSize : sizeof(buffer)-currentSeqnum ;
-          ACK a(pp->getSeqnum()+1, aws, '\50');
-          int ack_len = sizeof(a);
-          char res[ack_len];
-          memcpy(res, &a, ack_len);
-          //Send ACK
-          sendto(fd, res, ack_len, 0, (struct sockaddr *)&remaddr, slen);
-        }
-      }
-  }
+      PACKET p = receivePACKET();
 
-  for(int i = 0; i < strlen(buffer); i++){
-    v.push_back(buffer[i]);
+			if (p.isCheckSumEqual()){
+				int x = p.getSeqnum();
+				cout <<" OK \n";
+				//cout <<"seqnum : "<<x<<" ,data : "<<p.getData()<<"\n";
+
+	      if (x == -1){
+						cout <<" END here\n";
+						addtoVector((nr%buffersize));
+		        break;
+				}
+				if (isBufferFull()){
+					addtoVector(buffersize);
+					clearBuffer();
+				}
+				if (isFallInWindow(x)){
+					buffer[x]=p.getData();
+					packetreceived[x]=true;
+					if (x == nr) nr += 1;
+					if (x >= ns ) ns = x+1;
+				}
+			}
+			cout<<"STATS:\n";
+			for (int i=0;i<wr;i++)
+				cout<<nr+i<<" - "<<packetreceived[nr+i]<<"\n";
+			cout<<"\n";
+
+			wr = min(windowSize,buffersize-(nr%buffersize));
+      ACK a(nr,wr);
+      //cout <<"PACKET SEQNUM : "<<p.getSeqnum()<< " ,ACK SEQNUM : "<<a.getSeqnum()<<"\n";
+      sendACK(a);
+
   }
+	cout <<" FILE "<<v.size()<<":\n";
+	for (int i = 0; i<nr;i++){
+		cout << buffer[i];
+	}
+	cout<<"\n";
   writeToFile(filename,v);
-
+  delete[] buffer;
+  return 0;
 
 }

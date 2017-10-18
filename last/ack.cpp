@@ -4,10 +4,10 @@
 using namespace std;
 
 
-ACK::ACK(int seqnum,char AWS, char checksum): SOH(6) {
+ACK::ACK(int seqnum,char AWS): SOH(6) {
   this -> seqnum = seqnum;
   this -> AWS = AWS;
-  this -> checksum = checksum;
+  this -> checksum = generateChecksum();
 }
 
 void ACK::printACK(){
@@ -35,9 +35,9 @@ char ACK::getChecksum(){
 
 
 char ACK::generateChecksum(){
-  return ( SOH+ (char)seqnum+AWS+checksum );
+  return ( SOH+ (char)seqnum+AWS );
 }
 
 bool ACK::isCheckSumEqual(){
-  return (this -> generateChecksum() == checksum);
+  return (generateChecksum() == checksum);
 }
