@@ -32,10 +32,6 @@ Sliding window protocol adalah salah suatu protokol *control flow* untuk melakuk
 
 Karakteristik dari protokol ini adalah paket dapat dikirimkan lebih dari satu. Jumlah paket yang dapat dikirim dalam satu kali pengiriman dianalogikan sebagai `window size`. Paket-paket yang berada dalam suatu window akan dikirimkan secara bersamaan. Paket-paket dalam window memiliki arti bahwa mereka `sudah dikirim tetapi belum menerima ACK`. Paket-paket yang berada sebelum window menandakan bahwa paket tersebut `sudah terkirim dan sudah ACK`. Paket-paket setelah window `belum dikirim dan belum ACK`. Ketika suatu paket menerima ACK, maka paket tersebut akan dikeluarkan dari window. Fenomena tersebut yang disebut sebagai *sliding window*, yaitu window seakan-akan bergeser dan menyesuaikan paket mana yang akan dikirim selanjutnya.
 
-![alt text](https://github.com/betheazdavida/Sliding-Window-Protocol/blob/master/data/slidingwindow.jpg "Sliding Window")
-
-Sliding window protocol membuat kita dapat melakukan transfer packet dengan sequence number yang besarnya sudah ditentukan dengan tidak terbatas. Header dari packet menggunakan 16 bits untuk memuat besar window yang akan diterima kepada pengirim. Jika terdapat paket yang hilang atau rusak, maka sender tidak akan mengirimkan ACK untuk paket tersebut. Hal ini mengimplikasikan bahwa window pada pengirim tidak akan bergeser sehingga setelah beberapa waktu tertentu, pengirim akan melakukan pengiriman ulang terhadap paket yang sama.
-
 Cara kerja sliding window pada program:
 1. Pengirim dan penerima melakukan koneksi ke socket UDP.
 2. Pengirim membaca file dan memasukannya ke dalam file buffer (menggunakan fungsi `readToByte()`).
