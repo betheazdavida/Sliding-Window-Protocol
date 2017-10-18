@@ -28,12 +28,13 @@ Keterangan:
 
 # Cara Kerja Sliding Window Protocol
 
-Sliding window protocol adalah salah satu protocol untuk melakukan transmisi data berbasis packet. Secara konsep, setiap transmisi yang dilakukan dilengkapi dengan consecutive sequence number yang unik, dan penerima menggunakan sequence number tersebut untuk mengurutkan packet yang diterima, dimana selain itu juga menolak packet yang duplikat serta mengidentifikasi packet yang hilang. 
+Sliding window protocol adalah salah suatu protokol *control flow* untuk melakukan transmisi data berbasis packet dan menjamin transmisi yang reliable. Secara konsep, setiap transmisi yang dilakukan dilengkapi dengan *consecutive sequence number* yang unik. Penerima akan menggunakan *sequence number* tersebut untuk mengurutkan paket yang diterima dan menolak paket yang duplikat serta mengidentifikasi paket yang hilang. Setelah suatu paket diterima oleh penerima, maka penerima akan mengembalikan suatu *acknowledgement* kepada pengirim. Tujuan dari pengiriman *acknowledgement* adalah memberi tahu pengirim bahwa paket sudah diterima dan penerima siap untuk menerima paket berikutnya. 
 
-Sliding window protocol membuat kita dapat melakukan transfer packet dengan sequence number yang besarnya sudah ditentukan dengan tidak terbatas. Setiap window merupakan representasi dari pengirim untuk menunjukan total jumlah packet yang belum di acknowledge oleh penerima. Header dari packet menggunakan 16 bits untuk memuat besar window yang akan diterima kepada pengirim.
+Karakteristik dari protokol ini adalah paket dapat dikirimkan lebih dari satu. Jumlah paket yang dapat dikirim dalam satu kali pengiriman dianalogikan sebagai `window size`. Paket-paket yang berada dalam suatu window akan dikirimkan secara bersamaan. Paket-paket dalam window memiliki arti bahwa mereka `sudah dikirim tetapi belum menerima ACK`. Paket-paket yang berada sebelum window menandakan bahwa paket tersebut `sudah terkirim dan sudah ACK`. Paket-paket setelah window `belum dikirim dan belum ACK`. Ketika suatu paket menerima ACK, maka paket tersebut akan dikeluarkan dari window. Fenomena tersebut yang disebut sebagai *sliding window*, yaitu window seakan-akan bergeser dan menyesuaikan paket mana yang akan dikirim selanjutnya.
 
-Pada awalnya, pengirim mulai untuk mengirim sedikit packet dan meningkatkan jumlah packet di setiap transmisi setelah menerima acknowledgement packet dari penerima. Setiap acknowledgement yang diterima, window bergeser satu packet untuk mentransmisi satu packet. 
-Setiap satu ack diterima, window akan bergerak satu packet. Pada sisi penerima, window juga bergerak satu packet untuk setiap packet yang diterima. 
+![alt text](https://github.com/betheazdavida/Sliding-Window-Protocol/blob/master/img/slidingwindow.png "Sliding Window")
+
+Sliding window protocol membuat kita dapat melakukan transfer packet dengan sequence number yang besarnya sudah ditentukan dengan tidak terbatas. Header dari packet menggunakan 16 bits untuk memuat besar window yang akan diterima kepada pengirim. Jika terdapat paket yang hilang atau rusak, maka sender tidak akan mengirimkan ACK untuk paket tersebut. Hal ini mengimplikasikan bahwa window pada pengirim tidak akan bergeser sehingga setelah beberapa waktu tertentu, pengirim akan melakukan pengiriman ulang terhadap paket yang sama.
 
 Paket yang dapat ditransmit pada Sliding Windows Protocol ini adalah 
 
@@ -100,4 +101,4 @@ Urgent Pointer bisa digunakan sebagai Data Offset untuk menandai subset dari seb
 ### 12. Optional Data (0 to 40 bytes)
 Kegunaan dari Optional Data adalah mendukung untuk acknowledgement khusus dan algoritma window scaling.
 
-![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "TCP/IP")
+![alt text](https://github.com/betheazdavida/Sliding-Window-Protocol/blob/master/img/tcpheader.svg "TCP Header")
