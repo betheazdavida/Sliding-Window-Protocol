@@ -30,9 +30,12 @@ int buffersize;
 char *destinationIp;
 int destinationPort;
 vector<char> v;
+int nlisten;
 
 void sendPACKET(PACKET p){ //Packet yg akan dikirim always valid
-  cout << "[SEND] PACKET SEQNUM : " << p.getSeqnum() <<"\n";
+  char *addrz = inet_ntoa(remaddr.sin_addr);
+  int portz =ntohs(remaddr.sin_port);
+  printf("[SEND TO \tip: %s via PORT %d] PACKET SEQNUM : %d\n",addrz,portz,p.getSeqnum());
   int bufsize = sizeof(PACKET);
   char buf[buffersize];
   memcpy(buf,&p,bufsize);
@@ -40,13 +43,17 @@ void sendPACKET(PACKET p){ //Packet yg akan dikirim always valid
 }
 
 ACK receiveACK(){
+  char *addrz = inet_ntoa(remaddr.sin_addr);
+  int portz =ntohs(remaddr.sin_port);
   int bufsize = sizeof(ACK);
   char buf[buffersize];
   static ACK nack(-1,'\0');
   int recvlen = recvfrom(fd, buf, bufsize, 0, (struct sockaddr *)&remaddr, &addrlen);
   ACK *a = (ACK *)buf;
   if (recvlen == sizeof(ACK) && a->isCheckSumEqual()) { //Validation
-    cout <<"[RECEIVE]" << "ACK for - " <<a->getSeqnum()-1<<"\n";
+    printf("[RECEIVED FROM \tip: %s via PORT %d] ACK for - %d. AWS : %d\n",addrz,portz,a->getSeqnum()-1,int(a->getAWS()));
+
+    wt = int(a->getAWS());
     ACK aret(a->getSeqnum(),a->getAWS());
     return aret;
   }
@@ -54,38 +61,47 @@ ACK receiveACK(){
 }
 
 void sendMsg(){
+  nlisten=0;
+  //if (wt == 0) cout <<" SEND NOT WORKING\n";
   for (int i =0; i < wt; ++i){
-    cout <<(nt+i <= na+wt)<<" - "<<((nt+i)<=v.size()) <<" - "<<!packetreceived[nt+i]<<"\n";
-    if (nt+i <= na+wt && (nt+i)< v.size() && !packetreceived[nt+i]){
+    //cout <<(nt+i)<<" : "<<(nt+i <= na+wt)<<" - "<<((nt+i)<=v.size()) <<" - "<<!packetreceived[(nt+i)%buffersize]<<"\n";
+    if (nt+i <= na+wt && (nt+i)< v.size() && !packetreceived[(nt+i)%buffersize]){
       //cout <<"packet-"<<nt+i<<" sent "<<buffer[(nt+i)%buffersize]<<"\n";
       PACKET p(nt+i,buffer[(nt+i)%buffersize]);
       sendPACKET(p);
+      nlisten++;
     }
   }
 }
 
 void recvMsg(){
-  //for (int i = 0; i < wt; i++){
+  //if (wt == 0) cout <<" RCV NOT WORKING\n";
+  for (int i = 0; i < nlisten; i++){
+    if(nt+i < v.size()){
       ACK a = receiveACK();
       if (a.getSeqnum() != -1){ //validation
-        packetreceived[a.getSeqnum()-1]=true;
-        na = max(na,a.getSeqnum()); //update the Largest ACK received
+        packetreceived[(a.getSeqnum()-1)%buffersize]=true;
+        //cout <<"SET "<<(a.getSeqnum()-1)<<"/"<<(a.getSeqnum()-1)%buffersize<<" : "<<packetreceived[(a.getSeqnum()-1)%buffersize]<<"\n";
+        na = max(na,a.getSeqnum()-1); //update the Largest ACK received
       }
+    }
+
 
     //cout <<"pakcket-"<<a.getSeqnum()-1<<" : "<<packetreceived[a.getSeqnum()-1]<<"\n";
-  //}
+  }
 }
 
 void emptyBuffer(){
   for (int i = 0; i<buffersize; ++i){
-      packetreceived[i]=false;
       buffer[i]='\0';
   }
 }
 
 void fillBuffer(const vector<char>& v){
-  for (int i =0; i<buffersize && i+nt < v.size(); ++i)
-    buffer[i]=v[i+nt];
+  for (int i =0; i<buffersize && i+nt < v.size(); ++i){
+        packetreceived[i]=false;
+        buffer[i]=v[i+nt];
+  }
 }
 
 
@@ -175,28 +191,48 @@ int main(int argc, char** argv)
   nt = 0; na = 0; wt = windowSize;
   fillBuffer(v);
   while (nt < v.size()){
-    cout << " NT : " << nt <<" FILESIZE : "<<v.size()<<"\n";
+    //cout << " NT : " << nt <<" FILESIZE : "<<v.size()<<"\n";
+    //cout << " WT : " << wt <<"\n";
     sendMsg();
+    //sleep(0.5);
     recvMsg();
-    while(packetreceived[nt]&&nt < v.size()){
-      nt++;
-      if ( (buffersize - (nt%buffersize)) < windowSize)
-        wt = buffersize - (nt%buffersize);
-      else wt = windowSize;
+    if (wt == 0){
+      //cout << "BUFFER IS FULL ! na : " <<na<<"\n";
+      PACKET p(na,buffer[na%buffersize]);
+      emptyBuffer();
+      while(wt == 0)  {
+        sendPACKET(p);
+        ACK a = receiveACK();
+        if (a.getSeqnum() != -1){ //validation
+          packetreceived[(a.getSeqnum()-1) % buffersize]=true;
+          //cout <<"SET "<<(a.getSeqnum()-1)<<"/"<<(a.getSeqnum()-1)%buffersize<<" : "<<packetreceived[(a.getSeqnum()-1)%buffersize]<<"\n";
 
-      if (nt == buffersize){
-        emptyBuffer();
-        fillBuffer(v);
+          na = max(na,a.getSeqnum()); //update the Largest ACK received
+        }
+        nt+=wt;
       }
+
+      fillBuffer(v);
+
+        //cout << " NT2 : " << nt <<" FILESIZE : "<<v.size()<<"\n";
+        //cout << " WT2 : " << wt <<"\n";
+        for (int i = 0; i<wt;i++)
+          cout<<nt+i<<" - "<<packetreceived[nt+i]<<"\n";
     }
+
+      while(packetreceived[nt%buffersize]&& nt < v.size()){
+        nt++;
+        //cout<<"incremented nt, now : "<<nt<<"\n";
+      }
   }
 
   //send terminate packet
      //Framing packet
-     PACKET p(-1,'\0'); //headernya nol
+     PACKET p(-2,'\0'); //headernya nol
      sendPACKET(p);
   delete[] buffer;
 	close(fd);
   cout<<" FILE SIZE : "<<v.size()<<"\n";
+  cout<<" FILE SENT : "<<nt<<"\n";
 	return 0;
 }

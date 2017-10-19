@@ -43,7 +43,10 @@ using namespace std;
 	int nr,ns,wr;
 
   void sendACK(ACK p){ //Packet yg akan dikirim always valid
-		cout << "[SEND] ACK for - " << p.getSeqnum()-1 <<". AWS : "<<int(p.getAWS())<<"\n";
+		//cout << "[SEND] ACK for - " << p.getSeqnum()-1 <<". AWS : "<<int(p.getAWS())<<"\n";
+		char *addrz = inet_ntoa(remaddr.sin_addr);
+		int portz =ntohs(remaddr.sin_port);
+		printf("[SENT TO \tip: %s via PORT : %d] ACK for - %d . AWS : %d\n\n",addrz,portz,p.getSeqnum()-1,int(p.getAWS()));
     int bufsize = sizeof(ACK);
     char buf[buffersize];
     memcpy(buf,&p,bufsize);
@@ -59,7 +62,10 @@ PACKET receivePACKET(){
   //cout << "SEQNUM : "<<a->getSeqnum()<<" ,recv len : " << recvlen <<" ,Is equal checksum :" << a->isCheckSumEqual()<<"\n";
 
 	if (recvlen == sizeof(PACKET) && a->isCheckSumEqual()) { //Validation
-		cout << "[RECEIVE] PACKET SEQNUM : " << a->getSeqnum() <<". Data : "<<a->getData()<<"\n";
+		//cout << "[RECEIVE] PACKET SEQNUM : " << a->getSeqnum() <<". Data : "<<a->getData()<<"\n";
+		char *addrz = inet_ntoa(remaddr.sin_addr);
+		int portz =ntohs(remaddr.sin_port);
+		printf("[RECEIVED FROM \tip: %s via PORT : %d] PACKET SEQNUM : %d . Data : %c\n",addrz,portz,a->getSeqnum(),a->getData());
     PACKET aret(a->getSeqnum(),a->getData());
     return aret;
   }
@@ -91,7 +97,7 @@ void writeToFile(char* filename, vector<char> v){
 
 
 bool isBufferFull(){
-	return (nr != 0 && (nr % buffersize) == 0);
+	return (wr == 0);
 }
 
 void addtoVector(int N){
@@ -101,11 +107,13 @@ void addtoVector(int N){
 	}
 }
 void clearBuffer(){
-	for (int i=0; i<buffersize; i++)
+	for (int i=0;i<buffersize;i++){
 		buffer[i]='\0';
+	}
+
 }
 bool isFallInWindow(int x){
-	return (nr <= x && x <= (nr+wr));
+	return (nr <= x && x < nr+wr);
 }
 bool isPreStored(int x){
 	for (int i=x-1; i>=nr; i--)
@@ -158,6 +166,7 @@ int main(int argc, char **argv)
   int count;
   bool eof = false;
 	nr = 0; ns = 0; wr = windowSize;
+	bool sentFULL = false;
   while(1){
       //try to receive some data, this is a blocking call
       cout << "waiting for segment" << endl;
@@ -167,41 +176,65 @@ int main(int argc, char **argv)
 
 			if (p.isCheckSumEqual()){
 				int x = p.getSeqnum();
-				cout <<" OK \n";
-				//cout <<"seqnum : "<<x<<" ,data : "<<p.getData()<<"\n";
 
-	      if (x == -1){
-						cout <<" END here\n";
+
+				//cout <<" OK \n";
+				//cout <<"seqnum : "<<x<<" ,data : "<<p.getData()<<"\n";
+				//cout << " X : " << x <<"\n";
+	      if (x == -2){
+						//cout <<" END here\n";
 						addtoVector((nr%buffersize));
 		        break;
 				}
-				if (isBufferFull()){
-					addtoVector(buffersize);
-					clearBuffer();
-				}
 				if (isFallInWindow(x)){
-					buffer[x]=p.getData();
-					packetreceived[x]=true;
-					if (x == nr) nr += 1;
+					//cout <<" fall in window\n";
+					if (!packetreceived[x%buffersize]){
+					buffer[x%buffersize]=p.getData();
+					packetreceived[x%buffersize]=true;
+				}
+					//cout << "SET Packet " << x << "/" << x%buffersize <<" : " << packetreceived[x%buffersize]<<"\n";
+					if (x >= nr && isPreStored(x)) nr += 1;
 					if (x >= ns ) ns = x+1;
 				}
-			}
-			cout<<"STATS:\n";
-			for (int i=0;i<wr;i++)
-				cout<<nr+i<<" - "<<packetreceived[nr+i]<<"\n";
-			cout<<"\n";
 
-			wr = min(windowSize,buffersize-(nr%buffersize));
+
+			}
+
+			if (nr% buffersize == 0 && nr !=0){
+					if (!sentFULL){
+						sentFULL=true;
+						wr = 0;
+					}
+					else {
+						//cout <<"goes here\n";
+						wr = windowSize;
+						sentFULL=false;
+					}
+			}
+
+			else
+					wr = min(windowSize, buffersize - (nr%buffersize));
+
+			if (isBufferFull()){
+				//cout <<" BUFFER FULL !\n";
+				addtoVector(buffersize);
+				clearBuffer();
+			} else {
+				//cout << "NR : "<< nr <<"\n";
+				//cout << "WR : " << wr <<"\n";
+				//cout<<"STATS:\n";
+				//for (int i=0;i<wr;i++)
+				//	cout<<nr+i<<" - "<<packetreceived[nr+i]<<"\n";
+				//cout<<"\n";
+			}
+
       ACK a(nr,wr);
       //cout <<"PACKET SEQNUM : "<<p.getSeqnum()<< " ,ACK SEQNUM : "<<a.getSeqnum()<<"\n";
       sendACK(a);
 
   }
-	cout <<" FILE "<<v.size()<<":\n";
-	for (int i = 0; i<nr;i++){
-		cout << buffer[i];
-	}
-	cout<<"\n";
+	cout <<" FILE RECEIVED SIZE : "<<v.size()<<":\n";
+
   writeToFile(filename,v);
   delete[] buffer;
   return 0;
